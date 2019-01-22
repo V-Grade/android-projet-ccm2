@@ -25,6 +25,15 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements LocationListener{
 
@@ -106,6 +115,28 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         longitude = location.getLongitude();
 
         Toast.makeText(this, "latitude=" + latitude + " - longitude=" + longitude, Toast.LENGTH_LONG).show();
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        Map<String, Object> data = new HashMap<>();
+
+        data.put("Latitude", latitude);
+        data.put("Longitude", longitude);
+
+        db.collection("GPSLocation")
+        .add(data)
+        .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+            @Override
+            public void onSuccess(DocumentReference documentReference) {
+                Log.d("CUSTOM_LOG", "Location added with ID: " + documentReference.getId());
+            }
+        })
+        .addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.w("CUSTOM_LOG", "Error adding location", e);
+            }
+        });
 
     }
 
