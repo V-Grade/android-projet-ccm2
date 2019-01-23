@@ -25,13 +25,23 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,6 +54,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     private GoogleMap maGoogleMap;
 
     private MapFragment monMapFragment;
+
+    private String cleanDate;
+
+    private Double getLat;
+
+    private Double getLong;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,29 +130,71 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         latitude = location.getLatitude();
         longitude = location.getLongitude();
 
+        //GET DATE
+        SimpleDateFormat timeStampFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        Date rowDate = new Date();
+        String sendDate = timeStampFormat.format(rowDate);
+
         Toast.makeText(this, "latitude=" + latitude + " - longitude=" + longitude, Toast.LENGTH_LONG).show();
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         Map<String, Object> data = new HashMap<>();
 
+        //PUSH DATA
         data.put("Latitude", latitude);
         data.put("Longitude", longitude);
+        data.put("Date", sendDate);
 
         db.collection("GPSLocation")
         .add(data)
         .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
             @Override
             public void onSuccess(DocumentReference documentReference) {
-                Log.d("CUSTOM_LOG", "Location added with ID: " + documentReference.getId());
+                Log.d("PUSH_DATA", "Location added with ID: " + documentReference.getId());
             }
         })
         .addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Log.w("CUSTOM_LOG", "Error adding location", e);
+                Log.w("PUSH_DTA", "Error adding location", e);
             }
         });
+
+
+        //GET DATA
+        db.collection("GPSLocation")
+            .get()
+            .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                @Override
+                public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                    if (task.isSuccessful()) {
+                        for (DocumentSnapshot document : task.getResult()) {
+                            Log.d("GET_DATA", document.getId() + " => " + document.getData());
+
+                            JSONObject jObject = new JSONObject(document.getData());
+                            try {
+                                getLat = jObject.getDouble("Latitude");
+                                getLong = jObject.getDouble("Longitude");
+                                cleanDate = jObject.getString("Date");
+
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                                Log.d("GET_DATA", "Error parsing JSON");
+                            }
+
+
+                            Marker marker = maGoogleMap.addMarker(new MarkerOptions()
+                                    .position(new LatLng(getLat, getLong))
+                                    .title("Test")
+                                    .snippet(cleanDate));
+                        }
+
+                    } else {
+                        Log.w("GET_DATA", "Error getting location data", task.getException());
+                    }
+                }
+            });
 
     }
 
