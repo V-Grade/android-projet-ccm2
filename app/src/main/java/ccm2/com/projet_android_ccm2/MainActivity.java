@@ -61,6 +61,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
 
     private Double getLong;
 
+    private double latitude;
+
+    private double longitude;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -115,54 +119,68 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == ID_DEMANDE_PERMISSION) {
-
-        }
-    }
-
-    private double latitude;
-    private double longitude;
-
-    @Override
     public void onLocationChanged(Location location) {
 
         latitude = location.getLatitude();
         longitude = location.getLongitude();
 
-        //GET DATE
+        pushFirebaseData();
+
+        getFirebaseData();
+    }
+
+    private void chargerMap() {
+        monMapFragment.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(GoogleMap googleMap) {
+                maGoogleMap = googleMap;
+
+                maGoogleMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
+
+                if (ActivityCompat.checkSelfPermission(MainActivity.this,android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                        && ActivityCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) return;
+                maGoogleMap.setMyLocationEnabled(true);
+            }
+        });
+    }
+
+    private String todayDate () {
         SimpleDateFormat timeStampFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         Date rowDate = new Date();
-        String sendDate = timeStampFormat.format(rowDate);
 
-        Toast.makeText(this, "latitude=" + latitude + " - longitude=" + longitude, Toast.LENGTH_LONG).show();
+        return timeStampFormat.format(rowDate);
+    }
 
+    private void pushFirebaseData() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         Map<String, Object> data = new HashMap<>();
 
-        //PUSH DATA
+        String sendDate = todayDate();
+
         data.put("Latitude", latitude);
         data.put("Longitude", longitude);
         data.put("Date", sendDate);
 
         db.collection("GPSLocation")
-        .add(data)
-        .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-            @Override
-            public void onSuccess(DocumentReference documentReference) {
-                Log.d("PUSH_DATA", "Location added with ID: " + documentReference.getId());
-            }
-        })
-        .addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Log.w("PUSH_DTA", "Error adding location", e);
-            }
-        });
+            .add(data)
+            .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                @Override
+                public void onSuccess(DocumentReference documentReference) {
+                    Log.d("PUSH_DATA", "Location added with ID: " + documentReference.getId());
+                }
+            })
+            .addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.w("PUSH_DTA", "Error adding location", e);
+                }
+            });
+    }
 
+    private void getFirebaseData() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        //GET DATA
         db.collection("GPSLocation")
             .get()
             .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
@@ -195,8 +213,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     }
                 }
             });
-
     }
+
 
     @Override
     public void onStatusChanged(String s, int i, Bundle bundle) {
@@ -211,20 +229,5 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     @Override
     public void onProviderDisabled(String s) {
 
-    }
-
-    private void chargerMap() {
-        monMapFragment.getMapAsync(new OnMapReadyCallback() {
-            @Override
-            public void onMapReady(GoogleMap googleMap) {
-                maGoogleMap = googleMap;
-
-                maGoogleMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
-
-                if (ActivityCompat.checkSelfPermission(MainActivity.this,android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                        && ActivityCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) return;
-                maGoogleMap.setMyLocationEnabled(true);
-            }
-        });
     }
 }
