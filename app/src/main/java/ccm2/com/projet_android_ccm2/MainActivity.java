@@ -45,7 +45,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements LocationListener{
+public class MainActivity extends AppCompatActivity implements LocationListener {
 
     LocationManager monLocationManager;
 
@@ -135,6 +135,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             public void onMapReady(GoogleMap googleMap) {
                 maGoogleMap = googleMap;
 
+                maGoogleMap.getUiSettings().setZoomControlsEnabled(true);
+                maGoogleMap.getUiSettings().setAllGesturesEnabled(true);
+                maGoogleMap.getUiSettings().setMapToolbarEnabled(true);
+
                 maGoogleMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
 
                 if (ActivityCompat.checkSelfPermission(MainActivity.this,android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
@@ -204,7 +208,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
 
                             Marker marker = maGoogleMap.addMarker(new MarkerOptions()
                                     .position(new LatLng(getLat, getLong))
-                                    .title("Test")
+                                    .title("Position")
                                     .snippet(cleanDate));
                         }
 
